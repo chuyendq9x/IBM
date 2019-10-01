@@ -1,0 +1,79 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<project name="UserColumnSettingsPlugin" default="all" basedir=".">
+	<property environment="env"/>
+	<property name="npmPath" value="/usr/local/bin"/>
+
+	<available file="./react/node_modules" type="dir" property="npmInstalled" />
+    <condition property="shellCmd" value="cmd" else="sh" >  
+        <os family="windows"/>  
+    </condition>
+    <condition property="shellParam" value="/c" else="-c" >  
+        <os family="windows"/>  
+    </condition>
+	<condition property="shellSeparator" value=";" else=":" >  
+        <os family="windows"/>  
+    </condition>
+	<target name="all" depends="clean,compile,buildReactUI,jar" />
+
+	<path id="classpath">
+		<pathelement location="./lib/navigatorAPI.jar" />
+		<pathelement location="./lib/j2ee.jar" />
+		<pathelement location="./lib/Jace.jar" />
+	</path>
+
+	<target name="clean">
+		<delete dir="temp" />
+	</target>
+
+	<target name="compile">
+		<mkdir dir="temp" />
+		<javac srcdir="src" destdir="temp" source="1.7" target="1.7" debug="true">
+			<classpath refid="classpath" />
+			<include name="**/*.java" />
+		</javac>
+	</target>
+	<target name="npmInstall" unless="npmInstalled" >
+		<echo>Running "npm install". It could take some time to download dependencies.</echo>
+		  <exec executable="${shellCmd}" searchpath="true" dir="./react">
+		  	<arg value="${shellParam}"/>
+		  	<arg value="npm install"/>
+		  	<env key="PATH" value="${env.PATH}${shellSeparator}${npmPath}"/>
+		  </exec>
+	</target>
+	<target name="npmBuild">
+		  <exec executable="${shellCmd}" searchpath="true" dir="./react">
+		  	<arg value="${shellParam}"/>
+		  	<arg value="npm run build"/>
+		  	<env key="PATH" value="${env.PATH}${shellSeparator}${npmPath}"/>
+		  </exec>
+	</target>
+	<target name="buildReactUI" depends="npmInstall,npmBuild">	
+	</target>
+	<target name="jar">
+		<copy file="./react/build/UserColumnSettingsReact.css" todir="./src/com/ibm/ecm/extension/react/WebContent" overwrite="true" />
+		<copy todir="temp">
+			<fileset dir="src">
+				<include name="**/WebContent/**" />
+			</fileset>
+		</copy>
+		<copy todir="temp/com/ibm/ecm/extension/react/WebContent/userColumnSettings">
+			<fileset dir="react">
+				<include name="build/**" />
+			</fileset>
+		</copy>
+		<jar jarfile="ReactUserColumnSettingsPlugin.jar">
+			<fileset dir="./temp" includes="**/*" />
+			<manifest>
+				<attribute name="Plugin-Class" value="com.ibm.ecm.extension.react.UserColumnSettingsPluginReact" />
+				<section name="build">
+					<attribute name="Built-By" value="${user.name}" />
+					<attribute name="Build" value="${TODAY}" />
+				</section>
+			</manifest>
+		</jar>
+		<delete dir="./temp" />
+	</target>
+
+
+</project>
